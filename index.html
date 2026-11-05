@@ -308,6 +308,39 @@ html{background:var(--bg3)}
 #sp-book::before{display:none}
 #sp-book{filter:drop-shadow(0 14px 22px rgba(0,0,0,.35))}
 .sp-l,.sp-l .page{border-radius:9px 0 0 9px}.sp-r,.sp-r .page{border-radius:0 9px 9px 0}
+.sp-ghost{transition:opacity .3s}
+#sp-book.opening .sp-ghost.gL{opacity:0;transition:none}
+
+/* cadres du titre + stickers de couverture */
+.cover .label[data-lf="paper"]{background:#efe6d0!important;color:#3a2d20;font-family:'Fraunces',Georgia,serif!important;border-radius:2px!important;box-shadow:0 1px 3px rgba(0,0,0,.45)}
+.cover .label[data-lf="dotted"]{background:rgba(255,255,255,.92)!important;color:#2a2622;border:.7cqw dashed rgba(40,30,20,.6);border-radius:3cqw!important}
+.cover .label[data-lf="double"]{background:rgba(255,252,244,.94)!important;color:#2a2622;border-radius:1px!important;outline:.5cqw solid #2a2622;outline-offset:-2cqw;box-shadow:0 1px 3px rgba(0,0,0,.4);font-family:'Fraunces',Georgia,serif!important}
+.cover .label[data-lf="tape"]{background:rgba(255,232,150,.94)!important;color:#3a2d20;border-radius:1px!important;transform:rotate(-2.5deg);box-shadow:0 1px 3px rgba(0,0,0,.3);font-family:'Caveat',cursive!important}
+.cover .label[data-lf="tape"] b{font-size:11cqw}
+.cover .label[data-lf="none"]{background:transparent!important;color:#fff;box-shadow:none;text-shadow:0 1px 5px rgba(0,0,0,.6)}
+.cover .label[data-lf="dark"]{background:rgba(20,18,26,.82)!important;color:#fff;border-radius:3px!important;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.cst{position:absolute;z-index:4;line-height:1;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));white-space:nowrap}
+#f-prev .cover{overflow:hidden}
+#f-prev .cst{pointer-events:auto;touch-action:none;cursor:grab}
+#f-prev .cst.sel{outline:2px dashed #fff;outline-offset:3px;border-radius:6px}
+.stg{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:4px;max-height:150px;overflow:auto;padding:4px;border-radius:12px;background:rgba(0,0,0,.18)}
+.stg button{border:0;background:none;font-size:26px;line-height:1;padding:6px 0;border-radius:8px}
+.stg button:active{background:var(--soft2)}
+
+.cover .label[data-ls="rect"]{border-radius:1px!important}
+.cover .label[data-ls="round"]{border-radius:4cqw!important}
+.cover .label[data-ls="pill"]{border-radius:12cqw!important;padding-left:8%;padding-right:8%}
+.cover .label[data-ls="oval"]{border-radius:50%!important;padding:13% 9%}
+.cover .label[data-ls="arch"]{border-radius:50% 50% 2px 2px/32% 32% 2px 2px!important;padding-top:18%}
+.cover .label[data-ls="leaf"]{border-radius:12cqw 1px 12cqw 1px!important}
+.cover .label[data-ls="hex"]{border-radius:0!important;clip-path:polygon(9% 0,91% 0,100% 50%,91% 100%,9% 100%,0 50%);padding-left:12%;padding-right:12%}
+.cover .label[data-ls="ticket"]{border-radius:0!important;clip-path:polygon(0 0,100% 0,100% 38%,96% 50%,100% 62%,100% 100%,0 100%,0 62%,4% 50%,0 38%);padding-left:9%;padding-right:9%}
+.cover .label[data-ls="tag"]{border-radius:2px 12cqw 12cqw 2px!important;padding-right:10%}
+.ekb-t{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin-bottom:4px}.ekb-t::-webkit-scrollbar{display:none}
+.ekb-t button{border:0;background:none;font-size:20px;padding:6px 9px;border-radius:9px;flex:none;opacity:.55}
+.ekb-t button.on{background:var(--soft2);opacity:1}
+.stg{grid-template-columns:repeat(auto-fill,minmax(38px,1fr));max-height:210px}
+.stg button{font-size:25px}
 </style>
 </head>
 <body>
@@ -975,7 +1008,8 @@ function pageBack(){const b=$('#sp-l').cloneNode(true);b.removeAttribute('id');O
 function coverEl(book){
   const c=document.createElement('div');c.className='cover';c.style.setProperty('--c',book.color);if(book.spine)c.style.setProperty('--sp',book.spine);
   if(book.img){c.style.backgroundImage=`url(${book.img})`;c.style.backgroundSize='cover';c.style.backgroundPosition='center'}
-  if(book.label){c.innerHTML='<div class="label"><b></b></div>';$('b',c).textContent=book.title||'Sans titre'}
+  if(book.label){c.innerHTML='<div class="label"><b></b></div>';$('b',c).textContent=book.title||'Sans titre';if(book.lf&&book.lf!=='simple')$('.label',c).dataset.lf=book.lf;if(book.ls)$('.label',c).dataset.ls=book.ls}
+  (book.stickers||[]).forEach((t,i)=>{const e=document.createElement('span');e.className='cst';e.dataset.i=i;e.textContent=t.e;e.style.cssText=`left:${t.x}%;top:${t.y}%;font-size:${t.s}cqw;transform:translate(-50%,-50%) rotate(${t.r||0}deg)`;c.append(e)});
   return c;
 }
 function renderShelf(){
@@ -1000,12 +1034,16 @@ $('#books').addEventListener('click',e=>{
 });
 function bookDialog(book){
   const isNew=!book;
-  const b=book?{...book}:{title:'',color:COVERS[0],paper:'lined'};
+  const b=book?{...book,stickers:(book.stickers||[]).map(o=>({...o}))}:{title:'',color:COVERS[0],paper:'lined',stickers:[]};let sel=null;
   const sh=openSheet(`<h2>${isNew?'Nouveau carnet':'Modifier le carnet'}</h2>
     <label for="f-title">Titre</label><input type="text" id="f-title" maxlength="40" placeholder="Mon carnet" autocomplete="off">
+    <div id="f-prev" style="width:150px;margin:16px auto 4px"></div><div class="row" id="f-stc" style="margin:8px 0 0;justify-content:center;gap:6px;min-height:44px"></div>
     <div class="lbl">Couverture</div><div class="swatches" id="f-colors"></div>
     <div class="lbl">Bande à gauche</div><div class="swatches" id="f-spine"></div>
-    <div class="lbl">Image de couverture</div><div class="row" style="margin-top:6px"><div id="f-prev" style="width:84px;flex:none"></div><button class="btn" id="f-img">Importer une image</button><button class="btn" id="f-noimg">Retirer</button></div><div class="lbl">Titre sur la couverture</div><div class="chips" id="f-lab"></div>
+    <div class="lbl">Image de couverture</div><div class="row" style="margin-top:6px"><button class="btn" id="f-img">Importer une image</button><button class="btn" id="f-noimg">Retirer</button></div><div class="lbl">Titre sur la couverture</div><div class="chips" id="f-lab"></div>
+    <div class="lbl">Cadre du titre</div><div class="chips" id="f-lf"></div>
+    <div class="lbl">Forme du cadre</div><div class="chips" id="f-ls"></div>
+    <div class="lbl">Stickers (touche pour ajouter, glisse sur la couverture)</div><div class="ekb-t" id="f-sc"></div><div class="stg" id="f-st"></div>
     <div class="row">${isNew?'':'<button class="btn danger" id="f-del">Supprimer</button>'}<span class="sp"></span><button class="btn" id="f-cancel">Annuler</button><button class="btn primary" id="f-ok"></button></div>`);
   const ti=$('#f-title',sh);ti.value=b.title;$('#f-ok',sh).textContent=isNew?'Créer':'Enregistrer';
   const drawColors=()=>{const w=$('#f-colors',sh);w.innerHTML='';COVERS.forEach(c=>{const x=document.createElement('button');x.className='sw'+(c===b.color?' on':'');x.style.background=c;x.onclick=()=>{b.color=c;b.img=null;drawColors();drawPrev()};w.append(x)});const rb=document.createElement('label');rb.className='sw rainbow'+(COVERS.includes(b.color)?'':' on');rb.innerHTML='<input type="color">';$('input',rb).value=b.color.length===7?b.color:'#e88f86';$('input',rb).oninput=ev=>{b.color=ev.target.value};$('input',rb).onchange=()=>{b.img=null;drawColors();drawPrev()};w.append(rb)};
@@ -1013,10 +1051,30 @@ function bookDialog(book){
     ['#000000','#ffffff',...COVERS].forEach(c=>{const x=document.createElement('button');x.className='sw'+(b.spine===c?' on':'');x.style.background=c;x.onclick=()=>{b.spine=c;drawSpine();drawPrev()};w.append(x)});
     const rb=document.createElement('label');rb.className='sw rainbow';rb.innerHTML='<input type="color">';$('input',rb).value=(b.spine&&b.spine.length===7)?b.spine:'#444444';$('input',rb).onchange=ev=>{b.spine=ev.target.value;drawSpine();drawPrev()};w.append(rb)};
   const drawLab=()=>{const w=$('#f-lab',sh);w.innerHTML='';[[false,'Masqué'],[true,'Affiché']].forEach(([v,n])=>{const x=document.createElement('button');x.className='chip'+(!!b.label===v?' on':'');x.textContent=n;x.onclick=()=>{b.label=v;drawLab();drawPrev()};w.append(x)})};
-  const drawPrev=()=>{const w=$('#f-prev',sh);w.innerHTML='';w.append(coverEl({...b,pageIds:[]}))};
+  const LFS=[['simple','Simple'],['paper','Papier'],['dotted','Pointillé'],['double','Double filet'],['tape','Ruban'],['dark','Sombre'],['none','Sans cadre']];
+  const EMO={"v": "☹️ ☺️ 👹 👺 👻 👽 👾 💀 💩 😀 😁 😂 😃 😄 😅 😆 😇 😈 😉 😊 😋 😌 😍 😎 😏 😐 😑 😒 😓 😔 😕 😖 😗 😘 😙 😚 😛 😜 😝 😞 😟 😠 😡 😢 😣 😤 😥 😦 😧 😨 😩 😪 😫 😬 😭 😮 😯 😰 😱 😲 😳 😴 😵 😶 😷 😸 😹 😺 😻 😼 😽 😾 😿 🙀 🙁 🙂 🙃 🙄 🙅 🙆 🙇 🙈 🙉 🙊 🙋 🙌 🙍 🙎 🙏 🤐 🤑 🤒 🤓 🤔 🤕 🤖 🤗 🤘 🤙 🤚 🤛 🤜 🤝 🤞 🤟 🤠 🤡 🤢 🤣 🤤 🤥 🤦 🤧 🤨 🤩 🤪 🤫 🤬 🤭 🤮 🤯 🥰 🥱 🥲 🥳 🥴 🥵 🥶 🥷 🥸 🥹 🥺 🥻 🥼 🥽 🥾 🥿 🫠 🫡 🫢 🫣 🫤 🫥 🫦 🫧 🫨 🫩", "p": "☝️ ⛹️ ✊️ ✋️ ✌️ ✍️ 👀 👁 👂 👃 👄 👅 👆 👇 👈 👉 👊 👋 👌 👍 👎 👏 👐 👒 👚 👡 👢 👦 👧 👨 👩 👪 👫 👬 👭 👮 👯 👰 👱 👲 👳 👴 👵 👶 👷 👸 💁 💃 💅 💆 💇 💋 💏 💑 💪 💻 🕴 🕵 🕶 🕷 🕸 🕹 🕺 🤰 🤱 🤲 🤳 🤴 🤵 🤶 🤷 🤸 🤹 🤺 🤼 🤽 🤾 🤿 🦴 🦵 🦶 🦷 🦸 🦹 🦺 🦻 🦼 🦽 🦾 🦿 🧍 🧎 🧏 🧐 🧑 🧒 🧓 🧔 🧕 🧖 🧗 🧘 🧙 🧚 🧛 🧜 🧝 🧞 🧟 🧠 🫀 🫁 🫂 🫃 🫄 🫅 🫰 🫱 🫲 🫳 🫴 🫵 🫶 🫷 🫸", "n": "☀️ ☁️ ☂️ ☃️ ☄️ ☔️ ☘️ ⚡️ ⛄️ ⛅️ ✨️ ❄️ ⭐ 🌀 🌁 🌂 🌃 🌄 🌅 🌆 🌇 🌈 🌉 🌊 🌋 🌌 🌍 🌎 🌏 🌐 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘 🌙 🌚 🌛 🌜 🌝 🌞 🌟 🌠 🌡 🌤 🌥 🌦 🌧 🌨 🌩 🌪 🌫 🌬 🌭 🌮 🌯 🌰 🌱 🌲 🌳 🌴 🌵 🌶 🌷 🌸 🌹 🌺 🌻 🌼 🌽 🌾 🌿 🍀 🍁 🍂 🍃 🍄 🐀 🐁 🐂 🐃 🐄 🐅 🐆 🐇 🐈 🐉 🐊 🐋 🐌 🐍 🐎 🐏 🐐 🐑 🐒 🐓 🐔 🐕 🐖 🐗 🐘 🐙 🐚 🐛 🐜 🐝 🐞 🐟 🐠 🐡 🐢 🐣 🐤 🐥 🐦 🐧 🐨 🐩 🐪 🐫 🐬 🐭 🐮 🐯 🐰 🐱 🐲 🐳 🐴 🐵 🐶 🐷 🐸 🐹 🐺 🐻 🐼 🐽 🐾 🐿 💐 💥 💦 💧 💨 💫 🔥 🕊 🦀 🦁 🦂 🦃 🦄 🦅 🦆 🦇 🦈 🦉 🦊 🦋 🦌 🦍 🦎 🦏 🦐 🦑 🦒 🦓 🦔 🦕 🦖 🦗 🦘 🦙 🦚 🦛 🦜 🦝 🦞 🦟 🦠 🦡 🦢 🦣 🦤 🦥 🦦 🦧 🦨 🦩 🦪 🦫 🦬 🦭 🦮 🦯 🪰 🪱 🪲 🪳 🪴 🪵 🪶 🪷 🪸 🪹 🪺 🪻 🪼 🪽 🪾 🪿", "f": "☕️ 🍅 🍆 🍇 🍈 🍉 🍊 🍋 🍌 🍍 🍎 🍏 🍐 🍑 🍒 🍓 🍔 🍕 🍖 🍗 🍘 🍙 🍚 🍛 🍜 🍝 🍞 🍟 🍠 🍡 🍢 🍣 🍤 🍥 🍦 🍧 🍨 🍩 🍪 🍫 🍬 🍭 🍮 🍯 🍰 🍱 🍲 🍳 🍴 🍵 🍶 🍷 🍸 🍹 🍺 🍻 🍼 🍽 🍾 🍿 🥐 🥑 🥒 🥓 🥔 🥕 🥖 🥗 🥘 🥙 🥚 🥛 🥜 🥝 🥞 🥟 🥠 🥡 🥢 🥣 🥤 🥥 🥦 🥧 🥨 🥩 🥪 🥫 🥬 🥭 🥮 🥯 🧀 🧁 🧂 🧃 🧄 🧅 🧆 🧇 🧈 🧉 🧊 🧋 🫐 🫑 🫒 🫓 🫔 🫕 🫖 🫗 🫘 🫙 🫚 🫛 🫜 🫟", "a": "⌚ ⌛ ⏰ ⏳ ⚓️ ⚽️ ⚾️ ⛪️ ⛲️ ⛳️ ⛵️ ⛷️ ⛸️ ⛺️ ⛽️ ✈️ 🎀 🎁 🎂 🎃 🎄 🎅 🎆 🎇 🎈 🎉 🎊 🎋 🎌 🎍 🎎 🎏 🎐 🎑 🎒 🎓 🎖 🎗 🎙 🎚 🎛 🎞 🎟 🎠 🎡 🎢 🎣 🎤 🎥 🎦 🎧 🎨 🎩 🎪 🎫 🎬 🎭 🎮 🎯 🎰 🎱 🎲 🎳 🎴 🎵 🎶 🎷 🎸 🎹 🎺 🎻 🎼 🎽 🎾 🎿 🏀 🏁 🏂 🏃 🏄 🏅 🏆 🏇 🏈 🏉 🏊 🏋 🏌 🏍 🏎 🏏 🏐 🏑 🏒 🏓 🏔 🏕 🏖 🏗 🏘 🏙 🏚 🏛 🏜 🏝 🏞 🏟 🏠 🏡 🏢 🏣 🏤 🏥 🏦 🏧 🏨 🏩 🏪 🏫 🏬 🏭 🏮 🏯 🏰 🏳 🏴 🏵 🏷 🏸 🏹 🏺 🚀 🚁 🚂 🚃 🚄 🚅 🚆 🚇 🚈 🚉 🚊 🚋 🚌 🚍 🚎 🚏 🚐 🚑 🚒 🚓 🚔 🚕 🚖 🚗 🚘 🚙 🚚 🚛 🚜 🚝 🚞 🚟 🚠 🚡 🚢 🚣 🚤 🚥 🚦 🚧 🚨 🚩 🚪 🚫 🚬 🚭 🚮 🚯 🚰 🚱 🚲 🚳 🚴 🚵 🚶 🚷 🚸 🚹 🚺 🚻 🚼 🚽 🚾 🚿 🛀 🛁 🛂 🛃 🛄 🛅 🛋 🛌 🛍 🛎 🛏 🛐 🛑 🛒 🛕 🛖 🛗 🛜 🛝 🛞 🛟 🛠 🛡 🛢 🛣 🛤 🛥 🛩 🛫 🛬 🛰 🛳 🛴 🛵 🛶 🛷 🛸 🛹 🛺 🛻 🛼 🧩 🧸 🪀 🪁 🪂 🪃 🪄 🪅 🪆 🪇 🪈", "o": "⌨️ ☎️ ⚖️ ⚙️ ⛏️ ⛓️ ✂️ ✅️ ✉️ ✏️ ✒️ 🀄 🃏 💠 💡 💢 💣 💤 💬 💭 💮 💯 💰 💱 💲 💳 💴 💵 💶 💷 💸 💹 💺 💼 💽 💾 💿 📀 📁 📂 📃 📄 📅 📆 📇 📈 📉 📊 📋 📌 📍 📎 📏 📐 📑 📒 📓 📔 📕 📖 📗 📘 📙 📚 📛 📜 📝 📞 📟 📠 📡 📢 📣 📤 📥 📦 📧 📨 📩 📪 📫 📬 📭 📮 📯 📰 📱 📲 📳 📴 📵 📶 📷 📸 📹 📺 📻 📼 📽 📿 🔀 🔁 🔂 🔃 🔄 🔅 🔆 🔇 🔈 🔉 🔊 🔋 🔌 🔍 🔎 🔏 🔐 🔑 🔒 🔓 🔔 🔕 🔖 🔗 🔘 🔙 🔚 🔛 🔜 🔝 🔞 🔟 🔠 🔡 🔢 🔣 🔤 🔦 🔧 🔨 🔩 🔪 🔫 🔬 🔭 🔮 🔯 🔰 🔱 🔲 🔳 🔴 🔵 🔶 🔷 🔸 🔹 🔺 🔻 🔼 🔽 🕉 🕋 🕌 🕍 🕎 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚 🕛 🕜 🕝 🕞 🕟 🕠 🕡 🕢 🕣 🕤 🕥 🕦 🕧 🕯 🕰 🕳 🖇 🖊 🖋 🖌 🖍 🖐 🖕 🖖 🖤 🖥 🖨 🖱 🖲 🖼 🗂 🗃 🗄 🗑 🗒 🗓 🗜 🗝 🗞 🗡 🗣 🗨 🗯 🗳 🗺 🗻 🗼 🗽 🗾 🗿 🧡 🧢 🧣 🧤 🧥 🧦 🧧 🧨 🧪 🧫 🧬 🧭 🧮 🧯 🧰 🧱 🧲 🧳 🧴 🧵 🧶 🧷 🧹 🧺 🧻 🧼 🧽 🧾 🧿 🩰 🩱 🩲 🩳 🩴 🩵 🩶 🩷 🩸 🩹 🩺 🩻 🩼 🪉 🪏 🪐 🪑 🪒 🪓 🪔 🪕 🪖 🪗 🪘 🪙 🪚 🪛 🪜 🪝 🪞 🪟 🪠 🪡 🪢 🪣 🪤 🪥 🪦 🪧 🪨 🪩 🪪 🪫 🪬 🪭 🪮 🪯", "s": "‼️ ⁉️ ™️ ℹ️ ↔️ ↕️ ↖️ ↗️ ↘️ ↙️ ↩️ ↪️ ⏏️ ⏩ ⏪ ⏫ ⏬ ⏭️ ⏮️ ⏯️ ⏱️ ⏲️ ⏸️ ⏹️ ⏺️ Ⓜ️ ▪️ ▫️ ▶️ ◀️ ◻️ ◼️ ◽️ ◾️ ☑️ ☠️ ☢️ ☣️ ☦️ ☪️ ☮️ ☯️ ☸️ ♀️ ♂️ ♈️ ♉️ ♊️ ♋️ ♌️ ♍️ ♎️ ♏️ ♐️ ♑️ ♒️ ♓️ ♟️ ♠️ ♣️ ♥️ ♦️ ♨️ ♻️ ♾️ ♿️ ⚒️ ⚔️ ⚕️ ⚗️ ⚛️ ⚜️ ⚠️ ⚧️ ⚪️ ⚫️ ⚰️ ⚱️ ⛈️ ⛎️ ⛑️ ⛔️ ⛩️ ⛰️ ⛱️ ⛴️ ✔️ ✖️ ✝️ ✡️ ✳️ ✴️ ❇️ ❌️ ❎️ ❓️ ❔️ ❕️ ❗️ ❣️ ❤️ ➕️ ➖️ ➗️ ➡️ ➰️ ➿️ ⤴️ ⤵️ ⬅️ ⬆️ ⬇️ ⬛ ⬜ ⭕ 〰️ 〽️ ㊗️ ㊙️ 🅰 🅱 🅾 🅿 🆎 🆑 🆒 🆓 🆔 🆕 🆖 🆗 🆘 🆙 🆚 🈁 🈂 🈚 🈯 🈲 🈳 🈴 🈵 🈶 🈷 🈸 🈹 🈺 🉐 🉑 👑 👓 👔 👕 👖 👗 👘 👙 👛 👜 👝 👞 👟 👠 👣 👤 👥 👼 👿 💂 💄 💈 💉 💊 💌 💍 💎 💒 💓 💔 💕 💖 💗 💘 💙 💚 💛 💜 💝 💞 💟 🟠 🟡 🟢 🟣 🟤 🟥 🟦 🟧 🟨 🟩 🟪 🟫 🟰 🤌 🤍 🤎 🤏 🥀 🥁 🥂 🥃 🥄 🥅 🥇 🥈 🥉 🥊 🥋 🥌 🥍 🥎 🥏 🦰 🦱 🦲 🦳 🧌 🫆 🫎 🫏", "g": "🇦🇨 🇦🇩 🇦🇪 🇦🇫 🇦🇬 🇦🇮 🇦🇱 🇦🇲 🇦🇴 🇦🇶 🇦🇷 🇦🇸 🇦🇹 🇦🇺 🇦🇼 🇦🇽 🇦🇿 🇧🇦 🇧🇧 🇧🇩 🇧🇪 🇧🇫 🇧🇬 🇧🇭 🇧🇮 🇧🇯 🇧🇱 🇧🇲 🇧🇳 🇧🇴 🇧🇶 🇧🇷 🇧🇸 🇧🇹 🇧🇻 🇧🇼 🇧🇾 🇧🇿 🇨🇦 🇨🇨 🇨🇩 🇨🇫 🇨🇬 🇨🇭 🇨🇮 🇨🇰 🇨🇱 🇨🇲 🇨🇳 🇨🇴 🇨🇵 🇨🇷 🇨🇺 🇨🇻 🇨🇼 🇨🇽 🇨🇾 🇨🇿 🇩🇪 🇩🇬 🇩🇯 🇩🇰 🇩🇲 🇩🇴 🇩🇿 🇪🇦 🇪🇨 🇪🇪 🇪🇬 🇪🇭 🇪🇷 🇪🇸 🇪🇹 🇪🇺 🇫🇮 🇫🇯 🇫🇰 🇫🇲 🇫🇴 🇫🇷 🇬🇦 🇬🇧 🇬🇩 🇬🇪 🇬🇫 🇬🇬 🇬🇭 🇬🇮 🇬🇱 🇬🇲 🇬🇳 🇬🇵 🇬🇶 🇬🇷 🇬🇸 🇬🇹 🇬🇺 🇬🇼 🇬🇾 🇭🇰 🇭🇲 🇭🇳 🇭🇷 🇭🇹 🇭🇺 🇮🇨 🇮🇩 🇮🇪 🇮🇱 🇮🇲 🇮🇳 🇮🇴 🇮🇶 🇮🇷 🇮🇸 🇮🇹 🇯🇪 🇯🇲 🇯🇴 🇯🇵 🇰🇪 🇰🇬 🇰🇭 🇰🇮 🇰🇲 🇰🇳 🇰🇵 🇰🇷 🇰🇼 🇰🇾 🇰🇿 🇱🇦 🇱🇧 🇱🇨 🇱🇮 🇱🇰 🇱🇷 🇱🇸 🇱🇹 🇱🇺 🇱🇻 🇱🇾 🇲🇦 🇲🇨 🇲🇩 🇲🇪 🇲🇫 🇲🇬 🇲🇭 🇲🇰 🇲🇱 🇲🇲 🇲🇳 🇲🇴 🇲🇵 🇲🇶 🇲🇷 🇲🇸 🇲🇹 🇲🇺 🇲🇻 🇲🇼 🇲🇽 🇲🇾 🇲🇿 🇳🇦 🇳🇨 🇳🇪 🇳🇫 🇳🇬 🇳🇮 🇳🇱 🇳🇴 🇳🇵 🇳🇷 🇳🇺 🇳🇿 🇴🇲 🇵🇦 🇵🇪 🇵🇫 🇵🇬 🇵🇭 🇵🇰 🇵🇱 🇵🇲 🇵🇳 🇵🇷 🇵🇸 🇵🇹 🇵🇼 🇵🇾 🇶🇦 🇷🇪 🇷🇴 🇷🇸 🇷🇺 🇷🇼 🇸🇦 🇸🇧 🇸🇨 🇸🇩 🇸🇪 🇸🇬 🇸🇭 🇸🇮 🇸🇯 🇸🇰 🇸🇱 🇸🇲 🇸🇳 🇸🇴 🇸🇷 🇸🇸 🇸🇹 🇸🇻 🇸🇽 🇸🇾 🇸🇿 🇹🇦 🇹🇨 🇹🇩 🇹🇫 🇹🇬 🇹🇭 🇹🇯 🇹🇰 🇹🇱 🇹🇲 🇹🇳 🇹🇴 🇹🇷 🇹🇹 🇹🇻 🇹🇼 🇹🇿 🇺🇦 🇺🇬 🇺🇲 🇺🇳 🇺🇸 🇺🇾 🇺🇿 🇻🇦 🇻🇨 🇻🇪 🇻🇬 🇻🇮 🇻🇳 🇻🇺 🇼🇫 🇼🇸 🇽🇰 🇾🇪 🇾🇹 🇿🇦 🇿🇲 🇿🇼"};
+  const ECAT=[['v','😀'],['p','👋'],['n','🌿'],['f','🍔'],['a','⚽'],['o','💡'],['s','❤️'],['g','🏳️']];let ecat='v';
+  const drawLf=()=>{const w=$('#f-lf',sh);w.innerHTML='';LFS.forEach(([k,n])=>{const x=document.createElement('button');x.className='chip'+((b.lf||'simple')===k?' on':'');x.textContent=n;x.onclick=()=>{b.lf=k;b.label=true;drawLab();drawLf();drawPrev()};w.append(x)})};
+  const stBox=$('#f-st',sh),scBox=$('#f-sc',sh);
+  const drawEk=()=>{scBox.innerHTML='';ECAT.forEach(([k,ic])=>{const x=document.createElement('button');x.textContent=ic;x.className=k===ecat?'on':'';x.onclick=()=>{ecat=k;drawEk()};scBox.append(x)});
+    stBox.innerHTML='';stBox.scrollTop=0;const fr=document.createDocumentFragment();EMO[ecat].split(' ').forEach(e=>{const x=document.createElement('button');x.textContent=e;x.onclick=()=>{b.stickers.push({e,x:50+(Math.random()*30-15),y:50+(Math.random()*30-15),s:22,r:0});sel=b.stickers.length-1;drawPrev()};fr.append(x)});stBox.append(fr)};
+  const LSS=[['','Auto'],['rect','Rectangle'],['round','Arrondi'],['pill','Pilule'],['oval','Ovale'],['arch','Arche'],['leaf','Feuille'],['hex','Hexagone'],['ticket','Ticket'],['tag','Étiquette']];
+  const drawLs=()=>{const w=$('#f-ls',sh);w.innerHTML='';LSS.forEach(([k,n])=>{const x=document.createElement('button');x.className='chip'+((b.ls||'')===k?' on':'');x.textContent=n;x.onclick=()=>{b.ls=k;b.label=true;drawLab();drawLs();drawPrev()};w.append(x)})};
+  drawEk();
+  const drawStc=()=>{const w=$('#f-stc',sh);w.innerHTML='';if(sel===null||!b.stickers[sel])return;const t=b.stickers[sel];
+    [['−',()=>t.s=Math.max(6,t.s-3)],['+',()=>t.s=Math.min(70,t.s+3)],['↺',()=>t.r=(t.r||0)-15],['↻',()=>t.r=(t.r||0)+15],['Supprimer',()=>{b.stickers.splice(sel,1);sel=null}]].forEach(([n,f])=>{const x=document.createElement('button');x.className='btn'+(n==='Supprimer'?' danger':'');x.style.padding='0 14px';x.textContent=n;x.onclick=()=>{f();drawPrev()};w.append(x)})};
+  const drawPrev=()=>{const w=$('#f-prev',sh);w.innerHTML='';const c=coverEl({...b,pageIds:[]});w.append(c);drawStc();
+    if(sel!==null){const e=c.querySelector(`.cst[data-i="${sel}"]`);if(e)e.classList.add('sel')}
+    c.querySelectorAll('.cst').forEach(e=>e.addEventListener('pointerdown',ev=>{
+      ev.preventDefault();const i=+e.dataset.i,t=b.stickers[i],r=c.getBoundingClientRect();let moved=false;
+      if(sel!==i){sel=i;c.querySelectorAll('.cst').forEach(q=>q.classList.toggle('sel',q===e));drawStc()}
+      e.setPointerCapture(ev.pointerId);
+      const mv=m=>{moved=true;t.x=clamp((m.clientX-r.left)/r.width*100,0,100);t.y=clamp((m.clientY-r.top)/r.height*100,0,100);e.style.left=t.x+'%';e.style.top=t.y+'%'};
+      const up=()=>{e.removeEventListener('pointermove',mv);e.removeEventListener('pointerup',up);e.removeEventListener('pointercancel',up)};
+      e.addEventListener('pointermove',mv);e.addEventListener('pointerup',up);e.addEventListener('pointercancel',up)}))};
   $('#f-img',sh).onclick=()=>$('#file-cover').click();$('#f-noimg',sh).onclick=()=>{b.img=null;drawPrev()};
   $('#file-cover').onchange=async ev=>{const f=ev.target.files[0];ev.target.value='';if(f){try{b.img=await shrink(f,900);drawPrev()}catch(e){toast("Impossible de lire cette image")}}};
-  drawLab();drawPrev();drawSpine();
+  drawLab();drawLf();drawLs();drawPrev();drawSpine();
   drawColors();
   $('#f-cancel',sh).onclick=closeSheet;
   const del=$('#f-del',sh);
@@ -1029,12 +1087,12 @@ function bookDialog(book){
     const title=ti.value.trim()||'Sans titre';
     if(isNew){
       const p={id:uid(),bookId:'',items:[],strokes:[]};
-      const nb={id:uid(),title,color:b.color,paper:b.paper,img:b.img||null,spine:b.spine||null,label:!!b.label,pageIds:[p.id],created:Date.now(),updated:Date.now(),last:0};
+      const nb={id:uid(),title,color:b.color,paper:b.paper,img:b.img||null,spine:b.spine||null,lf:b.lf||'simple',ls:b.ls||'',stickers:b.stickers,label:!!b.label,pageIds:[p.id],created:Date.now(),updated:Date.now(),last:0};
       p.bookId=nb.id;await DB.put('pages',p);await DB.put('books',nb);S.books.push(nb);
       closeSheet();renderShelf();openBook(nb.id);
     }else{
       if(b.paper!==book.paper){for(const id of book.pageIds){const p=await loadPage(id);delete p.paper;await DB.put('pages',p)}}
-      Object.assign(book,{title,color:b.color,img:b.img||null,spine:b.spine||null,label:!!b.label});await DB.put('books',book);
+      Object.assign(book,{title,color:b.color,img:b.img||null,spine:b.spine||null,lf:b.lf||'simple',ls:b.ls||'',stickers:b.stickers,label:!!b.label});await DB.put('books',book);
       closeSheet();renderShelf();
       if(S.book===book){$('#btitle').textContent=title;$('#book').style.setProperty('--c',book.color);inEdit()?mountPage():renderSpread()}
     }
@@ -1055,7 +1113,7 @@ async function openBook(id){
   S.page=await loadPage(book.pageIds[S.idx]);resetHist();S.sp=Math.floor(S.idx/2);await renderSpread();
   const to=($('#sp-rr')||$('#sp-l')).getBoundingClientRect();
   if(!from){bv.style.opacity='1';$('#shelf').style.display='none';return}
-  const fx=$('#coverFx');fx.innerHTML='';fx.style.display='block';
+  const fx=$('#coverFx');fx.innerHTML='';fx.style.display='block';$('#sp-book').classList.add('opening');
   const fly=document.createElement('div');fly.className='fly';
   Object.assign(fly.style,{left:to.left+'px',top:to.top+'px',width:to.width+'px',height:to.height+'px',transformOrigin:'0 0'});
   const c3=document.createElement('div');c3.className='c3d';
@@ -1069,7 +1127,7 @@ async function openBook(id){
   ]);
   $('#shelf').style.display='none';
   await anim(c3,[{transform:'rotateY(0deg)'},{transform:'rotateY(-180deg)'}],{duration:950,easing:'cubic-bezier(.5,0,.2,1)'});
-  $('#sp-l').style.visibility='';fx.style.display='none';fx.innerHTML='';
+  $('#sp-l').style.visibility='';$('#sp-book').classList.remove('opening');fx.style.display='none';fx.innerHTML='';
 }
 async function closeBook(){
   if(S.turning||!S.book)return;
@@ -1079,7 +1137,7 @@ async function closeBook(){
   S.book=null;S.page=null;S.sides=[];
   renderShelf();$('#shelf').style.display='block';
   const card=$(`.book-card[data-id="${book.id}"] .cover`);const dest=card?card.getBoundingClientRect():null;
-  const fx=$('#coverFx');fx.innerHTML='';fx.style.display='block';
+  const fx=$('#coverFx');fx.innerHTML='';fx.style.display='block';$('#sp-book').classList.add('opening');
   const fly=document.createElement('div');fly.className='fly';
   Object.assign(fly.style,{left:to.left+'px',top:to.top+'px',width:to.width+'px',height:to.height+'px',transformOrigin:'0 0'});
   const c3=document.createElement('div');c3.className='c3d';c3.style.transform='rotateY(-180deg)';
@@ -1089,7 +1147,7 @@ async function closeBook(){
   await anim(c3,[{transform:'rotateY(-180deg)'},{transform:'rotateY(0deg)'}],{duration:700,easing:'cubic-bezier(.5,0,.2,1)'});
   bv.style.display='none';bv.classList.remove('spreadmode');
   if(dest)await anim(fly,[{transform:'none'},{transform:`translate(${dest.left-to.left}px,${dest.top-to.top}px) scale(${dest.width/to.width},${dest.height/to.height})`}],{duration:480,easing:'cubic-bezier(.4,0,.2,1)'});
-  fx.style.display='none';fx.innerHTML='';
+  fx.style.display='none';fx.innerHTML='';$('#sp-book').classList.remove('opening');
 }
 
 /* ================= Menu page ================= */
