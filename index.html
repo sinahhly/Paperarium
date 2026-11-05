@@ -61,7 +61,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
   background:var(--c);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset -2px 0 6px rgba(0,0,0,.25)}
 .book-card .cover{overflow:visible;box-shadow:3px 3px 0 #e8dfc9,5px 5px 0 #cdc2a8,10px 16px 22px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.06)}
-.cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9%;border-radius:3px 0 0 3px;background:rgba(0,0,0,.2)}
+.cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9%;border-radius:3px 0 0 3px;background:var(--sp,rgba(0,0,0,.2));z-index:1;pointer-events:none}
 .cover .band{position:absolute;top:0;bottom:0;right:13%;width:6%;background:linear-gradient(90deg,rgba(0,0,0,.5),rgba(0,0,0,.28) 50%,rgba(0,0,0,.5));box-shadow:0 0 6px rgba(0,0,0,.4)}
 .cover .label{position:absolute;left:19%;right:25%;top:17%;padding:9% 6%;background:#efe6d0;color:#3a2d20;border-radius:2px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.5);font-family:'Fraunces',Georgia,serif;
   background-image:var(--noise);}
@@ -288,9 +288,10 @@ input.hue::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;b
 
 /* séparation claire entre les deux pages */
 .sp-page .page::after{background:none!important}
+.sp-r{margin-left:-1px}
 .sp-l,.sp-l .page{border-radius:7px 0 0 7px}.sp-r,.sp-r .page{border-radius:0 7px 7px 0}
-#sp-book::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:7%;min-width:18px;max-width:46px;transform:translateX(-50%);background:linear-gradient(90deg,transparent 0,rgba(70,50,25,.10) 30%,rgba(50,35,15,.30) 48%,rgba(50,35,15,.38) 50%,rgba(255,255,255,.10) 50.6%,rgba(50,35,15,.20) 52%,rgba(70,50,25,.08) 70%,transparent 100%);mix-blend-mode:multiply;z-index:6;pointer-events:none}
-#pageWrap.dbl::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:7%;min-width:18px;max-width:46px;transform:translateX(-50%);background:linear-gradient(90deg,transparent 0,rgba(70,50,25,.10) 30%,rgba(50,35,15,.30) 48%,rgba(50,35,15,.38) 50%,rgba(255,255,255,.10) 50.6%,rgba(50,35,15,.20) 52%,rgba(70,50,25,.08) 70%,transparent 100%);mix-blend-mode:multiply;z-index:8;pointer-events:none}
+#sp-book::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:7%;min-width:18px;max-width:46px;transform:translateX(-50%);background:linear-gradient(90deg,rgba(0,0,0,0) 0,rgba(0,0,0,.035) 25%,rgba(0,0,0,.10) 45%,rgba(0,0,0,.13) 50%,rgba(0,0,0,.08) 56%,rgba(0,0,0,.025) 75%,rgba(0,0,0,0) 100%);mix-blend-mode:multiply;z-index:6;pointer-events:none}
+#pageWrap.dbl::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:7%;min-width:18px;max-width:46px;transform:translateX(-50%);background:linear-gradient(90deg,rgba(0,0,0,0) 0,rgba(0,0,0,.035) 25%,rgba(0,0,0,.10) 45%,rgba(0,0,0,.13) 50%,rgba(0,0,0,.08) 56%,rgba(0,0,0,.025) 75%,rgba(0,0,0,0) 100%);mix-blend-mode:multiply;z-index:8;pointer-events:none}
 .seg{display:flex;background:var(--soft);border-radius:10px;padding:3px;margin:6px 0 4px}
 .seg button{flex:1;border:0;background:none;color:inherit;padding:8px;border-radius:8px;font:inherit;font-size:13px}
 .seg button.on{background:var(--accent);color:var(--onacc)}
@@ -965,8 +966,8 @@ function updateChrome(){
 /* ================= Étagère & livres ================= */
 function pageBack(){const b=$('#sp-l').cloneNode(true);b.removeAttribute('id');Object.assign(b.style,{transform:'rotateY(180deg)',width:'100%',height:'100%'});return b}
 function coverEl(book){
-  const c=document.createElement('div');c.className='cover';c.style.setProperty('--c',book.color);
-  if(book.img){c.style.backgroundImage=`linear-gradient(90deg,rgba(0,0,0,.2) 0 9%,transparent 9%),url(${book.img})`;c.style.backgroundSize='100% 100%,cover';c.style.backgroundPosition='0 0,center'}
+  const c=document.createElement('div');c.className='cover';c.style.setProperty('--c',book.color);if(book.spine)c.style.setProperty('--sp',book.spine);
+  if(book.img){c.style.backgroundImage=`url(${book.img})`;c.style.backgroundSize='cover';c.style.backgroundPosition='center'}
   if(book.label){c.innerHTML='<div class="label"><b></b></div>';$('b',c).textContent=book.title||'Sans titre'}
   return c;
 }
@@ -996,15 +997,19 @@ function bookDialog(book){
   const sh=openSheet(`<h2>${isNew?'Nouveau carnet':'Modifier le carnet'}</h2>
     <label for="f-title">Titre</label><input type="text" id="f-title" maxlength="40" placeholder="Mon carnet" autocomplete="off">
     <div class="lbl">Couverture</div><div class="swatches" id="f-colors"></div>
+    <div class="lbl">Bande à gauche</div><div class="swatches" id="f-spine"></div>
     <div class="lbl">Image de couverture</div><div class="row" style="margin-top:6px"><div id="f-prev" style="width:84px;flex:none"></div><button class="btn" id="f-img">Importer une image</button><button class="btn" id="f-noimg">Retirer</button></div><div class="lbl">Titre sur la couverture</div><div class="chips" id="f-lab"></div>
     <div class="row">${isNew?'':'<button class="btn danger" id="f-del">Supprimer</button>'}<span class="sp"></span><button class="btn" id="f-cancel">Annuler</button><button class="btn primary" id="f-ok"></button></div>`);
   const ti=$('#f-title',sh);ti.value=b.title;$('#f-ok',sh).textContent=isNew?'Créer':'Enregistrer';
   const drawColors=()=>{const w=$('#f-colors',sh);w.innerHTML='';COVERS.forEach(c=>{const x=document.createElement('button');x.className='sw'+(c===b.color?' on':'');x.style.background=c;x.onclick=()=>{b.color=c;b.img=null;drawColors();drawPrev()};w.append(x)});const rb=document.createElement('label');rb.className='sw rainbow'+(COVERS.includes(b.color)?'':' on');rb.innerHTML='<input type="color">';$('input',rb).value=b.color.length===7?b.color:'#e88f86';$('input',rb).oninput=ev=>{b.color=ev.target.value};$('input',rb).onchange=()=>{b.img=null;drawColors();drawPrev()};w.append(rb)};
+  const drawSpine=()=>{const w=$('#f-spine',sh);w.innerHTML='';const a=document.createElement('button');a.className='chip'+(!b.spine?' on':'');a.textContent='Auto';a.onclick=()=>{b.spine=null;drawSpine();drawPrev()};w.append(a);
+    ['#000000','#ffffff',...COVERS].forEach(c=>{const x=document.createElement('button');x.className='sw'+(b.spine===c?' on':'');x.style.background=c;x.onclick=()=>{b.spine=c;drawSpine();drawPrev()};w.append(x)});
+    const rb=document.createElement('label');rb.className='sw rainbow';rb.innerHTML='<input type="color">';$('input',rb).value=(b.spine&&b.spine.length===7)?b.spine:'#444444';$('input',rb).onchange=ev=>{b.spine=ev.target.value;drawSpine();drawPrev()};w.append(rb)};
   const drawLab=()=>{const w=$('#f-lab',sh);w.innerHTML='';[[false,'Masqué'],[true,'Affiché']].forEach(([v,n])=>{const x=document.createElement('button');x.className='chip'+(!!b.label===v?' on':'');x.textContent=n;x.onclick=()=>{b.label=v;drawLab();drawPrev()};w.append(x)})};
   const drawPrev=()=>{const w=$('#f-prev',sh);w.innerHTML='';w.append(coverEl({...b,pageIds:[]}))};
   $('#f-img',sh).onclick=()=>$('#file-cover').click();$('#f-noimg',sh).onclick=()=>{b.img=null;drawPrev()};
   $('#file-cover').onchange=async ev=>{const f=ev.target.files[0];ev.target.value='';if(f){try{b.img=await shrink(f,900);drawPrev()}catch(e){toast("Impossible de lire cette image")}}};
-  drawLab();drawPrev();
+  drawLab();drawPrev();drawSpine();
   drawColors();
   $('#f-cancel',sh).onclick=closeSheet;
   const del=$('#f-del',sh);
@@ -1017,12 +1022,12 @@ function bookDialog(book){
     const title=ti.value.trim()||'Sans titre';
     if(isNew){
       const p={id:uid(),bookId:'',items:[],strokes:[]};
-      const nb={id:uid(),title,color:b.color,paper:b.paper,img:b.img||null,label:!!b.label,pageIds:[p.id],created:Date.now(),updated:Date.now(),last:0};
+      const nb={id:uid(),title,color:b.color,paper:b.paper,img:b.img||null,spine:b.spine||null,label:!!b.label,pageIds:[p.id],created:Date.now(),updated:Date.now(),last:0};
       p.bookId=nb.id;await DB.put('pages',p);await DB.put('books',nb);S.books.push(nb);
       closeSheet();renderShelf();openBook(nb.id);
     }else{
       if(b.paper!==book.paper){for(const id of book.pageIds){const p=await loadPage(id);delete p.paper;await DB.put('pages',p)}}
-      Object.assign(book,{title,color:b.color,img:b.img||null,label:!!b.label});await DB.put('books',book);
+      Object.assign(book,{title,color:b.color,img:b.img||null,spine:b.spine||null,label:!!b.label});await DB.put('books',book);
       closeSheet();renderShelf();
       if(S.book===book){$('#btitle').textContent=title;$('#book').style.setProperty('--c',book.color);inEdit()?mountPage():renderSpread()}
     }
